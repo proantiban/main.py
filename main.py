@@ -6,19 +6,12 @@ app = Flask(__name__)
 
 API_URL = "https://ff-community-api.vercel.app/ff.Info"
 
-async def send_single_visitor(session, uid):
-    try:
-        async with session.get(f"{API_URL}?uid={uid}") as response:
-            return response.status == 200
-    except Exception as e:
-        print(f"Error: {e}")
-        return False
-
 async def send_visitors(uid, num_visitors=25):
     async with aiohttp.ClientSession() as session:
-        tasks = [send_single_visitor(session, uid) for _ in range(num_visitors)]
-        results = await asyncio.gather(*tasks)  # تنفيذ جميع الطلبات دفعة واحدة
-        return sum(results)  # حساب عدد الطلبات الناجحة
+        tasks = [session.get(f"{API_URL}?uid={uid}") for _ in range(num_visitors)]
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        success_count = sum(1 for res in responses if isinstance(res, aiohttp.ClientResponse) and res.status == 200)
+        return success_count
 
 @app.route('/')
 def home():
@@ -30,7 +23,7 @@ async def api_send_visitors():
     if not uid:
         return jsonify({"error": "يرجى إدخال UID"}), 400
 
-    success_count = await send_visitors(uid, 25)  # تقليل العدد إلى 25
+    success_count = await send_visitors(uid, 25)  # إرسال 25 طلب دفعة واحدة
     return jsonify({"uid": uid, "total_requested": 25, "successful_visits": success_count})
 
 if __name__ == '__main__':
