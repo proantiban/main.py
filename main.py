@@ -21,7 +21,7 @@ async def send_visitors(uid, num_visitors=100):
         success = await send_single_visitor(uid)
         if success:
             success_count += 1
-        await asyncio.sleep(0.1)  # انتظار 100 مللي ثانية بين كل طلب لتجنب الضغط على السيرفر
+        await asyncio.sleep(0.1)  # انتظار 100 مللي ثانية بين كل طلب
     return success_count
 
 @app.route('/')
@@ -29,12 +29,12 @@ def home():
     return "🚀 API يعمل بنجاح!"
 
 @app.route('/send_visitors', methods=['GET'])
-async def api_send_visitors():
+def api_send_visitors():
     uid = request.args.get('uid')
     if not uid:
         return jsonify({"error": "يرجى إدخال UID"}), 400
 
-    success_count = await send_visitors(uid)
+    success_count = asyncio.run(send_visitors(uid))
     return jsonify({"uid": uid, "total_requested": 100, "successful_visits": success_count})
 
 if __name__ == '__main__':
