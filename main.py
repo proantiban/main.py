@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# قائمة الانتظار
+# قائمة الانتظار (Queue)
 queue = []
 
 @app.route('/')
@@ -14,26 +14,25 @@ def home():
 def add_user():
     data = request.json
     if not data or "name" not in data:
-        return jsonify({"error": "يرجى إدخال اسم المستخدم"}), 400
-    
-    user = {"id": len(queue) + 1, "name": data["name"]}
-    queue.append(user)
-    
-    return jsonify({"message": "تمت إضافة المستخدم بنجاح!", "user": user})
+        return jsonify({"error": "يرجى إرسال الاسم بصيغة JSON"}), 400
 
-# جلب قائمة الانتظار
-@app.route('/get_queue', methods=['GET'])
+    user_id = len(queue) + 1
+    queue.append({"id": user_id, "name": data["name"]})
+
+    return jsonify({"message": "تمت الإضافة بنجاح", "queue_position": user_id})
+
+# عرض قائمة الانتظار
+@app.route('/queue', methods=['GET'])
 def get_queue():
-    return jsonify({"queue": queue})
+    return jsonify(queue)
 
-# إزالة أول شخص من قائمة الانتظار
-@app.route('/remove_user', methods=['POST'])
-def remove_user():
-    if not queue:
-        return jsonify({"error": "لا يوجد أشخاص في قائمة الانتظار"}), 400
-    
-    removed_user = queue.pop(0)
-    return jsonify({"message": "تمت إزالة المستخدم", "user": removed_user})
+# حذف أول شخص في قائمة الانتظار
+@app.route('/complete_user', methods=['POST'])
+def complete_user():
+    if queue:
+        completed_user = queue.pop(0)
+        return jsonify({"message": "تم إكمال الدور", "completed_user": completed_user})
+    return jsonify({"error": "القائمة فارغة"}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
