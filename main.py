@@ -18,12 +18,12 @@ def home():
     return "🚀 API يعمل بنجاح!"
 
 @app.route('/send_visitors', methods=['GET'])
-async def api_send_visitors():
+def api_send_visitors():
     uid = request.args.get('uid')
     if not uid:
         return jsonify({"error": "يرجى إدخال UID"}), 400
 
-    success_count = await send_visitors(uid, 25)  # إرسال 25 طلب دفعة واحدة
+    success_count = asyncio.run(send_visitors(uid, 25))  # تشغيل الدالة async بشكل متزامن
     return jsonify({"uid": uid, "total_requested": 25, "successful_visits": success_count})
 
 if __name__ == '__main__':
