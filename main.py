@@ -1,30 +1,37 @@
 from flask import Flask, request, jsonify
-import requests
+import aiohttp
+import asyncio
 
 app = Flask(__name__)
 
-# API Endpoint
 API_URL = "https://ff-community-api.vercel.app/ff.Info"
+
+async def send_single_visitor(uid):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{API_URL}?uid={uid}") as response:
+            return response.status == 200
+
+async def send_visitors(uid, num_visitors=100):
+    success_count = 0
+    for _ in range(num_visitors):
+        success = await send_single_visitor(uid)
+        if success:
+            success_count += 1
+        await asyncio.sleep(0.1)  # انتظار 100 مللي ثانية بين كل طلب لتجنب الضغط
+    return success_count
 
 @app.route('/')
 def home():
     return "🚀 API يعمل بنجاح!"
 
 @app.route('/send_visitors', methods=['GET'])
-def send_visitors():
+async def api_send_visitors():
     uid = request.args.get('uid')
     if not uid:
         return jsonify({"error": "يرجى إدخال UID"}), 400
 
-    num_visitors = 100  # عدد الزوار ثابت
-    success_count = 0
-
-    for _ in range(num_visitors):
-        response = requests.get(f"{API_URL}?uid={uid}")
-        if response.status_code == 200:
-            success_count += 1
-
-    return jsonify({"uid": uid, "total_requested": num_visitors, "successful_visits": success_count})
+    success_count = await send_visitors(uid)
+    return jsonify({"uid": uid, "total_requested": 100, "successful_visits": success_count})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
