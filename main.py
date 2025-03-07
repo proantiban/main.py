@@ -1,17 +1,20 @@
 from flask import Flask, request, jsonify
-import aiohttp
-import asyncio
+import requests
 
 app = Flask(__name__)
 
 API_URL = "https://ff-community-api.vercel.app/ff.Info"
 
-async def send_visitors(uid, num_visitors=25):
-    async with aiohttp.ClientSession() as session:
-        tasks = [session.get(f"{API_URL}?uid={uid}") for _ in range(num_visitors)]
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
-        success_count = sum(1 for res in responses if isinstance(res, aiohttp.ClientResponse) and res.status == 200)
-        return success_count
+def send_visitors(uid, num_visitors=25):
+    success_count = 0
+    for _ in range(num_visitors):
+        try:
+            response = requests.get(f"{API_URL}?uid={uid}")
+            if response.status_code == 200:
+                success_count += 1
+        except Exception as e:
+            print(f"Error: {e}")
+    return success_count
 
 @app.route('/')
 def home():
@@ -23,7 +26,7 @@ def api_send_visitors():
     if not uid:
         return jsonify({"error": "يرجى إدخال UID"}), 400
 
-    success_count = asyncio.run(send_visitors(uid, 25))  # تشغيل الدالة async بشكل متزامن
+    success_count = send_visitors(uid, 25)
     return jsonify({"uid": uid, "total_requested": 25, "successful_visits": success_count})
 
 if __name__ == '__main__':
